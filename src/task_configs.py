@@ -15,6 +15,7 @@ from networks.deepsea import DeepSEA
 from networks.fno import Net2d
 from networks.deepcon import DeepCon
 from networks.wrn1d import ResNet1D
+from networks.vit import VisionTransformer
 
 # import data loaders, task-specific losses and metrics
 from data_loaders import load_cifar, load_mnist, load_deepsea, load_darcy_flow, load_psicov, load_music, load_ecg, load_satellite, load_ninapro, load_cosmic, load_spherical, load_fsd
@@ -99,9 +100,12 @@ def get_model(arch, sample_shape, num_classes, config_kwargs, ks = None, ds = No
                 model = wrn(int(splits[1]), int(splits[2]), dropout, in_channel=in_channel, num_classes=num_classes, ks = ks, ds = ds, activation=activation, remain_shape=remain_shape, pool_k=pool_k, squeeze=squeeze)
             except IndexError:
                 model = wrn(28, 10, 0.3, in_channel=in_channel, num_classes=num_classes, ks = ks, ds = ds, activation=activation, remain_shape=remain_shape, pool_k=pool_k, squeeze=squeeze)
-        elif 'convnext' in arch:
-            from networks.convnext import convnext_xtiny, convnext_tiny
-            model = convnext_xtiny(in_chans=in_channel, num_classes=num_classes, ks = ks, ds = ds, activation=activation, remain_shape=remain_shape)
+        elif arch == 'vit':
+            model = VisionTransformer(img_size=32, patch_size=4, in_chans=in_channel,
+                                     num_classes=num_classes, embed_dim=192, depth=12,
+                                     num_heads=3, mlp_ratio=4, drop_rate=dropout,
+                                     remain_shape=remain_shape, squeeze=squeeze,
+                                     activation=activation)
         elif 'resnet' in arch:
             model = resnet.__dict__[arch](in_channel=in_channel, num_classes=num_classes, ks = ks, ds = ds, activation=activation, remain_shape=remain_shape, pool_k=pool_k, squeeze=squeeze)
         elif 'fno' in arch:
@@ -147,8 +151,8 @@ def get_config(dataset):
         loss = nn.CrossEntropyLoss()
 
         batch_size = 64
-        arch_default = 'wrn-16-1' 
-        config_kwargs['arch_retrain_default'] = 'wrn-16-4' 
+        arch_default = 'vit'
+        config_kwargs['arch_retrain_default'] = 'vit'
         config_kwargs['grad_scale'] = 5000
 
 
@@ -304,25 +308,6 @@ def get_config(dataset):
                     
             return math.pow(base, optim_factor)
 
-    elif arch_default == 'convnext':
-        epochs_default, retrain_epochs, retrain_freq = 100, 300, 100
-        opt, arch_opt = torch.optim.AdamW, torch.optim.AdamW
-        lr, arch_lr = 4e-3, 1e-2
-        weight_decay = 0.05
-            
-        base_value = lr
-        final_value = 1e-6
-        niter_per_ep = 392 
-        warmup_iters = 0
-        epochs = retrain_epochs
-        iters = np.arange(epochs * niter_per_ep - warmup_iters)
-        schedule = np.array([final_value + 0.5 * (base_value - final_value) * (1 + math.cos(math.pi * i / (len(iters)))) for i in iters]) / base_value
-
-        def weight_sched_search(iter):
-            return schedule[iter]
-        
-        def weight_sched_train(iter):
-            return schedule[iter]
 
     elif arch_default == 'TCN':
         epochs_default, retrain_epochs, retrain_freq = 20, 40, 20

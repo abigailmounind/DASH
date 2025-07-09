@@ -9,7 +9,9 @@ replicate experiments on [NAS-Bench-360](https://nb360.ml.cmu.edu), a suite of t
 DASH is developed for efficiently solving diverse ML problems beyond well-researched domains such as computer vision and natural language processing. 
 Being fast, simple, and broadly applicable, DASH fixes a standard convolutional network (CNN) topology and searches for 
 the right kernel sizes and dilation rates that its operations should take on. 
-It expands the network capacity to extract features at multiple resolutions for different types of data while only requiring searching over the operation space. 
+It expands the network capacity to extract features at multiple resolutions for different types of data while only requiring searching over the operation space.
+
+This repository now includes a lightweight Vision Transformer implementation (`VisionTransformer`) inspired by AutoFormer for transformer-based architecture search on image tasks.
 To speed up the search process, DASH computes the mixture-of-operations needed by weight-sharing using the Fourier diagonalization of convolution, which achieves efficiency improvements over standard baselines both asymptotically and empirically.
 
 ## Requirements
